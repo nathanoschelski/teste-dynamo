@@ -1,0 +1,226 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "minha carteira",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "ServicosIntent",
+          "slots": [],
+          "samples": [
+            "sim",
+            "serviços",
+            "Listar serviços",
+            "Listar serviços disponíveis"
+          ]
+        },
+        {
+          "name": "IncluirGastoIntent",
+          "slots": [
+            {
+              "name": "tipodegasto",
+              "type": "tipo_gasto"
+            },
+            {
+              "name": "valor_gasto",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "categoria_gasto",
+              "type": "categorias"
+            }
+          ],
+          "samples": [
+            "registrar gasto de {valor_gasto} em {categoria_gasto}",
+            "gastei {valor_gasto} com {categoria_gasto}",
+            "registrar gasto de {valor_gasto} com {categoria_gasto}",
+            "registrar gasto {tipodegasto} de {valor_gasto} com {categoria_gasto}",
+            "inserir gasto {tipodegasto} de {valor_gasto} com {categoria_gasto}",
+            "incluir gasto  {tipodegasto} de {valor_gasto}"
+          ]
+        },
+        {
+          "name": "ConsultaSaldoIntent",
+          "slots": [],
+          "samples": [
+            "saldo",
+            "qual valor tenho na conta",
+            "quanto tenho na conta",
+            "quanto tenho de dinheiro",
+            "Qual o meu saldo"
+          ]
+        },
+        {
+          "name": "ConsultaMargemIntent",
+          "slots": [],
+          "samples": [
+            "quanto em posso comprometer em parcelas",
+            "quanto eu posso comprometer",
+            "qual minha margem",
+            "que margem eu tenho"
+          ]
+        },
+        {
+          "name": "IncluirReceitaIntent",
+          "slots": [
+            {
+              "name": "tipo_gasto",
+              "type": "tipo_gasto"
+            },
+            {
+              "name": "valor_ganho",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "categoria",
+              "type": "categorias"
+            }
+          ],
+          "samples": [
+            "ganhei {valor_ganho}",
+            "inclua receita {tipo_gasto} de {valor_ganho} com {categoria}",
+            "inclua rendimento de {valor_ganho}",
+            "inclua fonta de renda de {valor_ganho}",
+            "inclua receita {tipo_gasto} de {valor_ganho} "
+          ]
+        }
+      ],
+      "types": [
+        {
+          "values": [
+            {
+              "name": {
+                "value": "consultar margem de parcela"
+              }
+            },
+            {
+              "name": {
+                "value": "consultar gastos por categoria"
+              }
+            },
+            {
+              "name": {
+                "value": "consultar saldo"
+              }
+            },
+            {
+              "name": {
+                "value": "incluir receita"
+              }
+            },
+            {
+              "name": {
+                "value": "incluir gasto"
+              }
+            }
+          ],
+          "name": "Lista_servicos"
+        },
+        {
+          "values": [
+            {
+              "id": "1",
+              "name": {
+                "value": "único"
+              }
+            },
+            {
+              "id": "2",
+              "name": {
+                "value": "recorrente"
+              }
+            }
+          ],
+          "name": "tipo_gasto"
+        },
+        {
+          "values": [
+            {
+              "name": {
+                "value": "lazer",
+                "synonyms": [
+                  "exposição",
+                  "teatro",
+                  "show",
+                  "viagem",
+                  "passeio",
+                  "parque",
+                  "cinema"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "estudo",
+                "synonyms": [
+                  "pesquisa",
+                  "aprender",
+                  "aulas",
+                  "aprendizado"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "roupa",
+                "synonyms": [
+                  "jaqueta",
+                  "casaco",
+                  "chapéu",
+                  "luvas",
+                  "bota",
+                  "chinelo",
+                  "tênis",
+                  "boné",
+                  "calcinha",
+                  "cueca",
+                  "meia",
+                  "calça",
+                  "bermuda",
+                  "tênis",
+                  "vestido",
+                  "blusa",
+                  "vestuário",
+                  "roupas"
+                ]
+              }
+            },
+            {
+              "name": {
+                "value": "alimentação",
+                "synonyms": [
+                  "café da manhã",
+                  "lanche",
+                  "janta",
+                  "almoço",
+                  "comida"
+                ]
+              }
+            }
+          ],
+          "name": "categorias"
+        }
+      ]
+    }
+  },
+  "version": "14"
+}
