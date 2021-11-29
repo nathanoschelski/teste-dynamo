@@ -1,5 +1,3 @@
-#import manipulaBD
-
 class Carteira:
     def __init__(self):
         self.saldo = 0
@@ -8,5 +6,3 @@ class Carteira:
         
         
         return self.saldo
-    
-    

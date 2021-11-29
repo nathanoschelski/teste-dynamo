@@ -27,7 +27,8 @@
           "name": "ServicosIntent",
           "slots": [],
           "samples": [
-            "sim",
+            "quais os serviços",
+            "serviços disponíveis",
             "serviços",
             "Listar serviços",
             "Listar serviços disponíveis"
@@ -46,16 +47,45 @@
             },
             {
               "name": "categoria_gasto",
-              "type": "categorias"
+              "type": "categorias",
+              "samples": [
+                "com {categoria_gasto}",
+                "é {categoria_gasto}",
+                "{categoria_gasto}"
+              ]
+            },
+            {
+              "name": "reais",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "centavos",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
-            "registrar gasto de {valor_gasto} em {categoria_gasto}",
-            "gastei {valor_gasto} com {categoria_gasto}",
-            "registrar gasto de {valor_gasto} com {categoria_gasto}",
-            "registrar gasto {tipodegasto} de {valor_gasto} com {categoria_gasto}",
-            "inserir gasto {tipodegasto} de {valor_gasto} com {categoria_gasto}",
-            "incluir gasto  {tipodegasto} de {valor_gasto}"
+            "inserir gasto {tipodegasto} de {reais} reais com {categoria_gasto}",
+            "incluir gasto  {tipodegasto} de {reais} reais",
+            "registrar gasto de {reais} reais com {categoria_gasto}",
+            "registrar gasto de {reais} reais em {categoria_gasto}",
+            "gastei {reais} reais com {categoria_gasto}",
+            "registrar gasto de {reais} em {categoria_gasto}",
+            "gastei {reais} com {categoria_gasto}",
+            "inserir gasto {tipodegasto} de {reais} reais e {centavos} centavos com {categoria_gasto}",
+            "registrar gasto de {reais} reais e {centavos} centavos com {categoria_gasto}",
+            "registrar gasto de {reais} reais e {centavos} centavos em {categoria_gasto}",
+            "gastei {reais} reais e {centavos} centavos com {categoria_gasto}",
+            "registrar gasto de {reais} e {centavos} centavos em {categoria_gasto}",
+            "gastei {reais} e {centavos} centavos com {categoria_gasto}",
+            "inserir gasto {tipodegasto} de {reais} real e {centavos} centavos com {categoria_gasto}",
+            "registrar gasto de {reais} real e {centavos} centavos com {categoria_gasto}",
+            "gastei {reais} real e {centavos} centavos com {categoria_gasto}",
+            "gastei {reais} e {centavos} com {categoria_gasto}",
+            "inserir gasto {tipodegasto} de {reais} reais e {centavos} centavo com {categoria_gasto}",
+            "registrar gasto de {reais} reais e {centavos} centavo com {categoria_gasto}",
+            "registrar gasto de {reais} reais e {centavos} centavo em {categoria_gasto}",
+            "gastei {reais} reais e {centavos} centavo com {categoria_gasto}",
+            "registrar gasto de {reais} e {centavos} centavo em {categoria_gasto}"
           ]
         },
         {
@@ -83,24 +113,83 @@
           "name": "IncluirReceitaIntent",
           "slots": [
             {
-              "name": "tipo_gasto",
-              "type": "tipo_gasto"
-            },
-            {
               "name": "valor_ganho",
               "type": "AMAZON.NUMBER"
             },
             {
               "name": "categoria",
               "type": "categorias"
+            },
+            {
+              "name": "reais",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "centavos",
+              "type": "AMAZON.NUMBER"
             }
           ],
           "samples": [
-            "ganhei {valor_ganho}",
-            "inclua receita {tipo_gasto} de {valor_ganho} com {categoria}",
-            "inclua rendimento de {valor_ganho}",
-            "inclua fonta de renda de {valor_ganho}",
-            "inclua receita {tipo_gasto} de {valor_ganho} "
+            "registar receita de {centavos} centavo",
+            "registar receita de {centavos} centavos",
+            "registar receita de {reais} reais e {centavos} centavos",
+            "registar receita de {reais} reais e {centavos} centavo",
+            "registar receita de {reais} real e {centavos} centavos",
+            "registar receita de {reais} real e {centavos} centavo",
+            "registar receita de {reais} reais",
+            "registar receita de {reais} real",
+            "adicionar receita de {reais} reais e {centavos} centavos",
+            "adicionar receita de {reais} reais e {centavos} centavo",
+            "adicionar receita de {reais} real e {centavos} centavos",
+            "adicionar receita de {reais} real e {centavos} centavo",
+            "adicionar receita de {reais} reais",
+            "adicionar receita de {reais} real",
+            "incluir receita de {reais} reais e {centavos} centavos",
+            "incluir receita de {reais} reais e {centavos} centavo",
+            "incluir receita de {reais} real e {centavos} centavos",
+            "incluir receita de {reais} real e {centavos} centavo",
+            "incluir receita de {reais} reais",
+            "incluir receita de {reais} real",
+            "ganhei {centavos} centavo",
+            "ganhei {reais} real",
+            "ganhei {reais} real e {centavos} centavos",
+            "ganhei {reais} real e {centavos} centavo",
+            "ganhei {reais} reais e {centavos} centavos",
+            "ganhei {reais} reais e {centavos} centavo",
+            "recebi {reais} reais e {centavos} centavo",
+            "recebi {reais} real e {centavos} centavo",
+            "recebi {reais} reais e {centavos} centavos",
+            "recebi {centavos} centavo",
+            "recebi {centavos} centavos",
+            "recebi {reais} real",
+            "recebi {reais} reais",
+            "ganhei {reais} reais",
+            "ganhei {centavos} centavos"
+          ]
+        },
+        {
+          "name": "RemoverOperacaoIntent",
+          "slots": [],
+          "samples": [
+            "excluir operação",
+            "remover operação",
+            "remover ultima operação"
+          ]
+        },
+        {
+          "name": "EutenhoIntent",
+          "slots": [
+            {
+              "name": "reais",
+              "type": "AMAZON.NUMBER"
+            },
+            {
+              "name": "centavos",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "teste"
           ]
         }
       ],
@@ -183,6 +272,7 @@
               "name": {
                 "value": "roupa",
                 "synonyms": [
+                  "camisetas",
                   "jaqueta",
                   "casaco",
                   "chapéu",
@@ -220,7 +310,84 @@
           "name": "categorias"
         }
       ]
-    }
+    },
+    "dialog": {
+      "intents": [
+        {
+          "name": "IncluirGastoIntent",
+          "confirmationRequired": false,
+          "prompts": {},
+          "slots": [
+            {
+              "name": "tipodegasto",
+              "type": "tipo_gasto",
+              "elicitationRequired": false,
+              "confirmationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "valor_gasto",
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": false,
+              "confirmationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "categoria_gasto",
+              "type": "categorias",
+              "elicitationRequired": true,
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.1565534568986.1492591809043"
+              }
+            },
+            {
+              "name": "reais",
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": false,
+              "confirmationRequired": false,
+              "prompts": {}
+            },
+            {
+              "name": "centavos",
+              "type": "AMAZON.NUMBER",
+              "elicitationRequired": false,
+              "confirmationRequired": false,
+              "prompts": {}
+            }
+          ]
+        },
+        {
+          "name": "RemoverOperacaoIntent",
+          "confirmationRequired": true,
+          "prompts": {
+            "confirmation": "Confirm.Intent.47738874796"
+          },
+          "slots": []
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
+    "prompts": [
+      {
+        "id": "Confirm.Intent.47738874796",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Você realmente deseja remover a última operação?"
+          }
+        ]
+      },
+      {
+        "id": "Elicit.Slot.1565534568986.1492591809043",
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "Qual a categoria do gasto?"
+          }
+        ]
+      }
+    ]
   },
-  "version": "14"
+  "version": "29"
 }

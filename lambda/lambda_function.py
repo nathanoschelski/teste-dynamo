@@ -8,6 +8,9 @@
 #Para o DynamoDB: https://developer.amazon.com/en-US/docs/alexa/hosted-skills/alexa-hosted-skills-session-persistence.html
 import os
 import boto3
+from boto3.dynamodb.conditions import Key
+from boto3.dynamodb.conditions import Attr
+
 
 import logging
 import ask_sdk_core.utils as ask_utils
@@ -17,6 +20,8 @@ from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
 from ask_sdk_core.dispatch_components import AbstractExceptionHandler
 from ask_sdk_core.handler_input import HandlerInput
+from decimal import Decimal
+from datetime import datetime
 
 from ask_sdk_core.skill_builder import CustomSkillBuilder
 from ask_sdk_dynamodb.adapter import DynamoDbAdapter
@@ -28,12 +33,13 @@ ddb_table_name = os.environ.get('DYNAMODB_PERSISTENCE_TABLE_NAME')
 ddb_resource = boto3.resource('dynamodb', region_name=ddb_region)
 dynamodb_adapter = DynamoDbAdapter(table_name=ddb_table_name, create_table=False, dynamodb_resource=ddb_resource)
 ddb_client = boto3.client('dynamodb')
-
+tabela = ddb_resource.Table(ddb_table_name)
 
 #para coleta de logs
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+lista_servicos = "Os serviços disponíveis são: incluir gasto, incluir receita, consultar saldo ou remover a última operação. O quê você quer?"
 
 class LaunchRequestHandler(AbstractRequestHandler):
     """Handler for Skill Launch."""
@@ -47,35 +53,10 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        banco = {}
-        banco = handler_input.attributes_manager.persistent_attributes
-        handler_input.attributes_manager.session_attributes = handler_input.attributes_manager.persistent_attributes
-        
-        '''
-        tabela = ddb_resource.Table(ddb_table_name)
-        if 'saldo' in tabela == False:
-            tabela.put_item(
-                Item={
-                    "saldo": 0,
-                    "qtdade_operacoes": 0
-                }
-            )
-        '''
-        
-        if not banco:
-            banco['id'] = 'minhacarteira.skill@gmail.com'
-            banco['saldo'] = 0
-            #banco['qtdade_gastos'] = 0
-            #banco['qtdade_receitas'] = 0
-            banco['qtdade_operacoes'] = 0
-            
-        speak_output = "Olá, esta é sua carteira. Seu saldo atual é " + str(banco['saldo']) + " reais"
-        #speak_output = "O nome da sua tabela é: " + str(ddb_table_name) + "! O nome do seu boto é: " + str(ddb_resource)
-        
-        handler_input.attributes_manager.persistent_attributes = banco
-        
-        handler_input.attributes_manager.save_persistent_attributes()
-        
+
+        speak_output = "Olá, esta é sua carteira. Você pode incluir gasto, incluir receita, consultar saldo ou remover a última operação. O quê você quer?"
+        #speak_output = "Olá, esta é sua carteira."
+
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -83,17 +64,148 @@ class LaunchRequestHandler(AbstractRequestHandler):
                 .response
         )
 
+## Funções inicio
+def atualiza_saldo(valor,tipo_operacao):
+    if tipo_operacao == 'receita':
+        novo_saldo = saldo_atual() + valor
+    else:
+        if tipo_operacao == 'gasto':
+            novo_saldo = saldo_atual() - valor
+    tabela.update_item(
+        Key={
+            'id': 'saldo'
+        },
+        UpdateExpression="set valor=:r",
+        ExpressionAttributeValues={
+            ':r': novo_saldo
+        },            
+    )
+
+#Função de consulta do saldo no DynamoDB    
+def saldo_atual():
+    try:
+        meu_saldo = tabela.get_item(Key={'id': 'saldo'},ProjectionExpression='valor')['Item']['valor']
+        response = meu_saldo
+
+    except ClientError as e:
+        response = '0'
+    return response
+
+def contador_operacoes(operador):
+    #se for adicionar uma nova operação é passado o parâmetro 'add' então o contador de operações é incremnentado, se for uma remoção o parâmetro 'remove' diminui a quantidade de operações
+    if operador == 'add':
+        contador = tabela.get_item(Key={'id': 'saldo'},ProjectionExpression='qtdade_operacoes')['Item']['qtdade_operacoes'] + 1
+    else:
+        if operador == 'remove':
+            contador = tabela.get_item(Key={'id': 'saldo'},ProjectionExpression='qtdade_operacoes')['Item']['qtdade_operacoes'] - 1
+    tabela.update_item(
+        Key={
+            'id': 'saldo'
+        },
+        UpdateExpression="set qtdade_operacoes=:r",
+        ExpressionAttributeValues={
+            ':r': contador
+        },            
+    )
+    return 'op' + str(contador)
+
+def texto_para_decimal(reais, centavos):
+    
+    if reais is not None and centavos is not None:
+        valor_receibo = Decimal(reais) + (Decimal(centavos)/100)
+    else:
+        if reais is None:
+            valor_receibo = (Decimal(centavos)/100)
+        else:
+            if centavos is None:
+                valor_receibo = Decimal(reais)
+            else:
+                valor_receibo = 0 
+    return valor_receibo
+
+def saldo_para_texto():
+    # type: (HandlerInput) -> Response
+
+    saldo = saldo_atual()
+
+    reais = str(saldo // 1)
+    centavos = str(int((saldo % 1) * 100))
+    speak_output = "Você não tem saldo."
+    if int(reais) > 0 and int(centavos) > 0:
+        speak_output = reais + " reais e " + centavos + " centavos"
+    else:
+        if int(reais) > 0 and int(centavos) <= 0:
+            speak_output = reais + " reais"
+        else:
+            if int(reais) <= 0 and int(centavos) > 0:
+                speak_output = centavos + " centavos"
+    return  speak_output
+
+def remover_operacao():
+    qtdade = tabela.get_item(Key={'id': 'saldo'},ProjectionExpression='qtdade_operacoes')['Item']['qtdade_operacoes']
+    id_a_remover = 'op' + str(qtdade)
+    item_a_remover = tabela.get_item(Key={'id': id_a_remover})
+    valor_item_removido = (item_a_remover)['Item']['valor']
+    tipo_item_removido = str((item_a_remover)['Item']['tipo'])
+    atualiza_saldo(valor_item_removido,tipo_item_removido)
+    qtdade_operacoes = contador_operacoes('remove')
+    tabela.delete_item(
+        Key={
+            'id': id_a_remover
+        }
+    )  
+
+## Funções final
 
 class ServicosIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
+
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("ServicosIntent")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Os serviços disponíveis são: incluir gasto, incluir receita, consultar saldo, consultar gastos por categoria e consultar margem para a parcela. Qual destes serviços você deseja?"
+        speak_output = lista_servicos
 
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .ask(speak_output)
+                # .ask("add a reprompt if you want to keep the session open for the user to respond")
+                .response
+        )
+
+#inteção teste
+
+class EutenhoIntentHandler(AbstractRequestHandler):
+
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("EutenhoIntent")(handler_input)
+
+    def handle(self, handler_input):
+        # type: (HandlerInput) -> Response
+        
+        #result = tabela.get_item(Key={'categoria': 'comida'},ProjectionExpression='valor')['Item']['valor']
+        '''
+        table = ddb_resource.Table(ddb_table_name)
+        response = table.query(
+            TableName=ddb_table_name,
+            KeyConditionExpression='categoria= :catego',
+            ExpressionAttributeValues={
+                ':catego': {'S': 'comida'}
+            }
+
+            
+        )
+        '''
+        #criar_index()
+        '''
+        response = tabela.scan(FilterExpression=Attr('categoria').eq('comida'))
+        data = response['Items']
+        '''
+        #speak_output = "Você acionou a função teste." + str(response['Items'])
+        speak_output = "teste aqui ok."
         return (
             handler_input.response_builder
                 .speak(speak_output)
@@ -110,20 +222,14 @@ class ConsultaSaldoIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        banco = {}
-        banco = handler_input.attributes_manager.persistent_attributes
-        handler_input.attributes_manager.session_attributes = handler_input.attributes_manager.persistent_attributes
-        banco['saldo'] = banco['saldo'] + 5
-        speak_output = "Seu saldo atual é " + str(banco['saldo']) + " reais"
+        speak_output = "Seu saldo atual é " + saldo_para_texto()
+
         #speak_output = "Olá, esta é sua carteira. Seu saldo atual é? mil reais"
         
-        handler_input.attributes_manager.persistent_attributes = banco
-        
-        handler_input.attributes_manager.save_persistent_attributes()
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask("O quê você quer agora?")
+                .ask("Deseja algo mais?")
                 .response
         )
 
@@ -133,54 +239,74 @@ class IncluirGastoIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("IncluirGastoIntent")(handler_input)
     
     def handle(self, handler_input):
-        banco = {}
-        banco = handler_input.attributes_manager.persistent_attributes
-        handler_input.attributes_manager.session_attributes = handler_input.attributes_manager.persistent_attributes
-        valor_gasto = int(handler_input.request_envelope.request.intent.slots['valor_gasto'].value)
+
+        reais = handler_input.request_envelope.request.intent.slots['reais'].value
+        centavos = handler_input.request_envelope.request.intent.slots['centavos'].value        
+        
+        valor_gasto = texto_para_decimal(reais,centavos)
+
         categoria = str(handler_input.request_envelope.request.intent.slots['categoria_gasto'].value)
-        if valor_gasto <= banco['saldo']:
-            banco['saldo'] = banco['saldo'] - valor_gasto
-            banco['qtdade_operacoes'] = banco['qtdade_operacoes'] + 1
-            qtdade_operacoes = "op" + str(banco['qtdade_operacoes']) + ""
+        
+        if valor_gasto <= saldo_atual():
+            atualiza_saldo(valor_gasto,'gasto')
+            qtdade_operacoes = contador_operacoes('add')
 
             try:
-                speak_output = "Registrado o gasto no valor de: " + str(valor_gasto) + " reais na categoria: " + categoria + ". Seu saldo agora é " + str(banco['saldo']) + " reais" 
+                speak_output = "Registrado o gasto no valor de: " + str(valor_gasto) + " reais na categoria: " + categoria + ". Seu saldo agora é " + saldo_para_texto()
                 tabela = ddb_resource.Table(ddb_table_name)
                 tabela.put_item(
                     Item={
                         "id": qtdade_operacoes,
                         "valor": valor_gasto,
                         "tipo": "gasto",
-                        "categoria": categoria
+                        "categoria": categoria,
+                        "dia" : datetime.today().strftime('%d'),
+                        "mes" : datetime.today().strftime('%m'),
+                        "ano" : datetime.today().strftime('%Y')
                     }
                 )
 
-                ddb_client.update_item(
-                    TableName = ddb_table_name,
-                    Key= {'id' : {'S':'saldo'}},
-                    UpdateExpression="set valor {'N' : '9'}"
-                    #ExpressionAttributeValues={
-                    #    :val: {'N' : '9'}
-                    #},
-                )
-
             except ValueError:
-                speak_output = "houve um erro ao salvar o gasto."    
+                speak_output = "Houve um erro ao salvar o gasto."    
 
         else:
-            speak_output = "Você não tem saldo suficiente para este gasto. Seu saldo atual é " + str(banco['saldo']) + " reais"
+            speak_output = "Você não tem saldo suficiente para este gasto. Seu saldo atual é " + saldo_para_texto()
 
 
-        handler_input.attributes_manager.persistent_attributes = banco
-        handler_input.attributes_manager.save_persistent_attributes()
+        return (
+            handler_input.response_builder
+                .speak(speak_output)
+                .ask("Deseja algo mais?")
+                .response
+        )    
+
+
+## Terminar função
+class RemoverOperacaoIntentHandler(AbstractRequestHandler):
+    def can_handle(self, handler_input):
+        # type: (HandlerInput) -> bool
+        return ask_utils.is_intent_name("RemoverOperacaoIntent")(handler_input)
+    
+    def handle(self, handler_input):
+
+        #após o usuário confirmar que realmente deseja excluir a última operação, a ação é executada
+        confirma = str(handler_input.request_envelope.request.intent.confirmation_status.value)
+        if confirma == 'CONFIRMED':
+            remover_operacao()
+            
+            speak_output = "Última operação foi removida com sucesso."
+
+
+        else:
+            speak_output = "Remoção cancelada!"
+
         
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                #.ask(speak_output)
+                .ask("Deseja algo mais?")
                 .response
-        )    
-        
+        )
     
 class IncluirReceitaIntentHandler(AbstractRequestHandler):
     def can_handle(self, handler_input):
@@ -188,45 +314,45 @@ class IncluirReceitaIntentHandler(AbstractRequestHandler):
         return ask_utils.is_intent_name("IncluirReceitaIntent")(handler_input)
     
     def handle(self, handler_input):
-        banco = {}
-        banco = handler_input.attributes_manager.persistent_attributes
-        handler_input.attributes_manager.session_attributes = handler_input.attributes_manager.persistent_attributes
-        valor_ganho = int(handler_input.request_envelope.request.intent.slots['valor_ganho'].value)
-        banco['saldo'] = banco['saldo'] + valor_ganho
-        banco['qtdade_operacoes'] = banco['qtdade_operacoes'] + 1
-        qtdade_operacoes = "op" + str(banco['qtdade_operacoes']) + ""
-        speak_output = "Registrada receita no valor de: " + str(valor_ganho) + " reais. Seu saldo agora é " + str(banco['saldo']) + " reais"            
-        
-        handler_input.attributes_manager.persistent_attributes = banco
-        handler_input.attributes_manager.save_persistent_attributes()
 
+        #valor_ganho = int(handler_input.request_envelope.request.intent.slots['valor_ganho'].value)
+        reais = handler_input.request_envelope.request.intent.slots['reais'].value
+        centavos = handler_input.request_envelope.request.intent.slots['centavos'].value        
+        
+        valor_ganho = texto_para_decimal(reais,centavos)
+        atualiza_saldo(valor_ganho,'receita')
+        qtdade_operacoes = contador_operacoes('add')
+        speak_output = "Registrada receita no valor de: " + str(valor_ganho) + " reais. Seu saldo agora é " + saldo_para_texto()           
+        
         tabela = ddb_resource.Table(ddb_table_name)
         tabela.put_item(
             Item={
                 "id": qtdade_operacoes,
                 "valor": valor_ganho,
                 "tipo": "receita",
+                "dia" : datetime.today().strftime('%d'),
+                "mes" : datetime.today().strftime('%m'),
+                "ano" : datetime.today().strftime('%Y')                
             }
         )
         
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                .ask(speak_output)
+                .ask("Deseja algo mais?")
                 .response
         )    
 
 
-    
 class HelpIntentHandler(AbstractRequestHandler):
-    """Handler for Help Intent."""
+
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AMAZON.HelpIntent")(handler_input)
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "You can say hello to me! How can I help?"
+        speak_output = lista_servicos
 
         return (
             handler_input.response_builder
@@ -245,7 +371,7 @@ class CancelOrStopIntentHandler(AbstractRequestHandler):
 
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
-        speak_output = "Goodbye!"
+        speak_output = "O primeiro passo é gastar menos do que você ganha. Até mais."
 
         return (
             handler_input.response_builder
@@ -262,8 +388,8 @@ class FallbackIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         logger.info("In FallbackIntentHandler")
-        speech = "Hmm, I'm not sure. You can say Hello or Help. What would you like to do?"
-        reprompt = "I didn't catch that. What can I help you with?"
+        speech = "Hmm, não entendi seu comando." + lista_servicos
+        reprompt = "Não entendi seu pedido, o quê você quer?"
 
         return handler_input.response_builder.speak(speech).ask(reprompt).response
 
@@ -317,7 +443,7 @@ class CatchAllExceptionHandler(AbstractExceptionHandler):
         # type: (HandlerInput, Exception) -> Response
         logger.error(exception, exc_info=True)
 
-        speak_output = "Sorry, I had trouble doing what you asked. Please try again."
+        speak_output = "Desculpe, houve algum problema com sua solicitação. Favor tentar novamente."
 
         return (
             handler_input.response_builder
@@ -343,10 +469,13 @@ sb.add_request_handler(IncluirReceitaIntentHandler())
 #sb.add_request_handler(ConsultaMargemIntentHandler())
 sb.add_request_handler(IncluirGastoIntentHandler())
 sb.add_request_handler(HelpIntentHandler())
+sb.add_request_handler(RemoverOperacaoIntentHandler())
+sb.add_request_handler(EutenhoIntentHandler())
 sb.add_request_handler(CancelOrStopIntentHandler())
 sb.add_request_handler(FallbackIntentHandler())
 sb.add_request_handler(SessionEndedRequestHandler())
 sb.add_request_handler(IntentReflectorHandler()) # make sure IntentReflectorHandler is last so it doesn't override your custom intent handlers
+
 
 sb.add_exception_handler(CatchAllExceptionHandler())
 
